@@ -1,0 +1,10 @@
+# macOS / editor cruft
+.DS_Store
+*.swp
+
+# env files
+.env
+.env.local
+
+
+CLAUDE.md
