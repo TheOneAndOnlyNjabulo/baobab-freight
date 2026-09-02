@@ -10,10 +10,12 @@ from pydantic import BaseModel
 # erroring, and never overrides an already-set env var.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app.db import log_query  # noqa: E402
+from app.db import count_queries_for_ip, log_query  # noqa: E402
 from app.rag_chain import answer_question  # noqa: E402
 
 app = FastAPI(title="Baobab Freight Assistant API")
+
+RATE_LIMIT_PER_IP = 10
 
 
 @app.get("/health")
@@ -34,12 +36,20 @@ class SourceResponse(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list[SourceResponse]
+    remaining_questions: int
 
 
 @app.post("/chat")
 def chat(request: ChatRequest) -> ChatResponse:
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="question must not be empty")
+
+    used = count_queries_for_ip(request.ip_address)
+    if used >= RATE_LIMIT_PER_IP:
+        raise HTTPException(
+            status_code=429,
+            detail=f"You've used all {RATE_LIMIT_PER_IP} questions for this session.",
+        )
 
     start = time.perf_counter()
     try:
@@ -67,4 +77,5 @@ def chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(
         answer=result.answer,
         sources=[SourceResponse(document=s.document, section=s.section) for s in result.sources],
+        remaining_questions=RATE_LIMIT_PER_IP - (used + 1),
     )

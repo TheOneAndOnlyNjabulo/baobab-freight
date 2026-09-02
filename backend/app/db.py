@@ -37,3 +37,12 @@ def log_query(
                 """,
                 (question, answer, chunk_ids, ip_address, latency_ms),
             )
+
+
+def count_queries_for_ip(ip_address: str) -> int:
+    """Lifetime count of rows for this IP - no reset window, matching CLAUDE.md's
+    data model note that rate limiting is just 'count rows where ip_address = $1'."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("select count(*) from queries where ip_address = %s", (ip_address,))
+            return cur.fetchone()[0]
