@@ -70,7 +70,6 @@
     --border: oklch(0.85 0.03 55);
     --input: oklch(0.85 0.03 55);
     --ring: oklch(0.58 0.16 42);
-    --glow: oklch(0.58 0.16 42 / 22%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -108,7 +107,6 @@
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.76 0.16 55);
-    --glow: oklch(0.76 0.16 55 / 35%);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
@@ -136,61 +134,10 @@
     }
 }
 
-@layer utilities {
-  .text-glow {
-    text-shadow: 0 0 24px var(--glow), 0 0 4px var(--glow);
-  }
-  .shadow-glow {
-    box-shadow: 0 0 0 1px var(--glow), 0 4px 28px -6px var(--glow);
-  }
-  .shadow-glow-sm {
-    box-shadow: 0 2px 14px -4px var(--glow);
-  }
-}
-
-/* fixed atmospheric backdrop: a slow-drifting amber glow over a faint route-line
-   grid, evoking a night dispatch console tracking cargo corridors */
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    radial-gradient(ellipse 900px 500px at 15% -10%, var(--glow), transparent 60%),
-    radial-gradient(ellipse 700px 500px at 110% 30%, var(--glow), transparent 55%),
-    repeating-linear-gradient(
-      115deg,
-      color-mix(in oklch, var(--foreground) 4%, transparent) 0px,
-      color-mix(in oklch, var(--foreground) 4%, transparent) 1px,
-      transparent 1px,
-      transparent 88px
-    );
-  background-size: 100% 100%, 100% 100%, 200% 200%;
-  animation: atmosphere-drift 40s ease-in-out infinite alternate;
-}
-
-@keyframes atmosphere-drift {
-  0% {
-    background-position: 0% 0%, 0% 0%, 0% 0%;
-  }
-  100% {
-    background-position: 2% 3%, -3% -2%, 6% 4%;
-  }
-}
-
-@keyframes pulse-ring {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--glow);
-  }
-  50% {
-    box-shadow: 0 0 0 6px transparent;
-  }
-}
-
 @keyframes message-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(6px);
   }
   to {
     opacity: 1;
@@ -199,20 +146,5 @@
 }
 
 .animate-message-in {
-  animation: message-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes status-pulse {
-  0%, 100% {
-    opacity: 1;
-    box-shadow: 0 0 0 0 var(--glow);
-  }
-  50% {
-    opacity: 0.7;
-    box-shadow: 0 0 0 4px transparent;
-  }
-}
-
-.animate-status-pulse {
-  animation: status-pulse 2.4s ease-in-out infinite;
+  animation: message-in 0.25s ease-out both;
 }
