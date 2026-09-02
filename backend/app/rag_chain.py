@@ -19,6 +19,19 @@ from app.retrieval import RetrievedChunk, retrieve
 
 GENERATION_MODEL = "gemini-3.5-flash-lite"
 
+# Below this cosine similarity, retrieval is treated as "found nothing relevant" and
+# the LLM is never called - empirically calibrated: truly out-of-scope questions
+# (weather, recipes, unrelated topics) top out around 0.57-0.59, while even
+# borderline-related questions ("what's a bill of lading?") score 0.65+, and clearly
+# in-scope questions score 0.74-0.81. 0.62 sits in the gap with margin on both sides.
+CONFIDENCE_THRESHOLD = 0.62
+
+NOT_FOUND_ANSWER = (
+    "I couldn't find anything in Baobab Freight's policy documents that answers this "
+    "question. Try rephrasing, or ask about customs, delivery SLAs, claims, dangerous "
+    "goods, cross-border documentation, pricing, driver safety, POPIA, or general FAQs."
+)
+
 SYSTEM_PROMPT = """You are the Baobab Freight Assistant, a support chatbot for Baobab Freight & \
 Logistics, a fictional South African freight and logistics company. Answer the user's question \
 using ONLY the context below, drawn from Baobab's internal policy and compliance documents.
@@ -86,6 +99,12 @@ def _get_chain():
 
 def answer_question(question: str, top_k: int = 5) -> RagResult:
     chunks = retrieve(question, top_k=top_k)
+
+    if not chunks or chunks[0].score < CONFIDENCE_THRESHOLD:
+        # Skip the LLM entirely - nothing retrieved is relevant enough to answer
+        # from, and no sources are returned since none were actually usable.
+        return RagResult(answer=NOT_FOUND_ANSWER, sources=[], chunk_ids=[])
+
     chain = _get_chain()
     answer = chain.invoke({"context": _format_context(chunks), "question": question})
     return RagResult(
