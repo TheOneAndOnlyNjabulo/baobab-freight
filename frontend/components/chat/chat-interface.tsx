@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Send } from "lucide-react"
+import ReactMarkdown from "react-markdown"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -77,46 +78,81 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="mx-auto flex h-svh w-full max-w-2xl flex-col">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
-        <div>
-          <h1 className="text-sm font-semibold">Baobab Freight Assistant</h1>
-          <p className="text-xs text-muted-foreground">
-            Ask about customs, SLAs, claims, and compliance for Baobab Freight & Logistics.
-          </p>
-        </div>
-        <ThemeToggle />
-      </header>
+    <div className="relative flex h-svh flex-col">
+      <div className="atmosphere" aria-hidden="true" />
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        <div className="flex flex-col gap-4">
-          {messages.map((message) => (
-            <MessageBubble key={message.id} message={message} />
-          ))}
-          {isSending && <TypingIndicator />}
+      <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col overflow-hidden">
+        <header className="flex items-center justify-between border-b border-border/70 px-4 py-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span
+                className="size-2 rounded-full bg-primary animate-status-pulse"
+                aria-hidden="true"
+              />
+              <h1 className="font-display text-2xl font-bold tracking-wide text-glow uppercase">
+                Baobab Freight
+              </h1>
+            </div>
+            <p className="mt-0.5 pl-4 text-xs text-muted-foreground">
+              Ask about customs, SLAs, claims, and compliance for Baobab Freight & Logistics.
+            </p>
+          </div>
+          <ThemeToggle />
+        </header>
+
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5">
+          <div className="flex flex-col gap-4">
+            {messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
+            {isSending && <TypingIndicator />}
+          </div>
+        </div>
+
+        <div className="border-t border-border/70 px-4 py-3">
+          <RemainingIndicator remaining={remaining} limitReached={limitReached} />
+          <div className="flex items-center gap-2">
+            <Input
+              value={input}
+              onChange={(event) => setInput(event.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={limitReached ? "No questions remaining" : "Ask a question..."}
+              disabled={isSending || limitReached}
+              aria-label="Your question"
+              className="transition-shadow focus-visible:shadow-glow-sm"
+            />
+            <Button
+              onClick={handleSend}
+              disabled={!canSend}
+              size="icon"
+              aria-label="Send"
+              className={cn(
+                "shrink-0 transition-all",
+                canSend && "shadow-glow-sm hover:shadow-glow hover:-translate-y-0.5"
+              )}
+            >
+              <Send className="size-4" />
+            </Button>
+          </div>
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="border-t border-border px-4 py-3">
-        <div className="mb-2 text-xs text-muted-foreground">
-          {limitReached
-            ? "You've used all your questions for this session."
-            : `${remaining} question${remaining === 1 ? "" : "s"} remaining`}
-        </div>
-        <div className="flex items-center gap-2">
-          <Input
-            value={input}
-            onChange={(event) => setInput(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={limitReached ? "No questions remaining" : "Ask a question..."}
-            disabled={isSending || limitReached}
-            aria-label="Your question"
-          />
-          <Button onClick={handleSend} disabled={!canSend} size="icon" aria-label="Send">
-            <Send className="size-4" />
-          </Button>
-        </div>
-      </div>
+function RemainingIndicator({ remaining, limitReached }: { remaining: number; limitReached: boolean }) {
+  const dotColor = limitReached
+    ? "bg-destructive"
+    : remaining <= 3
+      ? "bg-amber-500"
+      : "bg-primary"
+
+  return (
+    <div className="mb-2 flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
+      <span className={cn("size-1.5 rounded-full", dotColor)} aria-hidden="true" />
+      {limitReached
+        ? "Session limit reached"
+        : `${remaining} question${remaining === 1 ? "" : "s"} remaining`}
     </div>
   )
 }
@@ -124,7 +160,7 @@ export function ChatInterface() {
 function MessageBubble({ message }: { message: ChatMessage }) {
   if (message.role === "error") {
     return (
-      <div className="flex flex-col items-start">
+      <div className="flex flex-col items-start animate-message-in">
         <div className="max-w-[85%] rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm leading-relaxed text-destructive">
           {message.content}
         </div>
@@ -135,23 +171,25 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   const isUser = message.role === "user"
 
   return (
-    <div className={cn("flex flex-col", isUser ? "items-end" : "items-start")}>
+    <div className={cn("flex flex-col animate-message-in", isUser ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed whitespace-pre-wrap",
+          "max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed",
           isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted text-foreground"
+            ? "bg-primary text-primary-foreground shadow-glow-sm whitespace-pre-wrap"
+            : "border border-border/60 bg-card text-card-foreground"
         )}
       >
-        {message.content}
+        {isUser ? message.content : <MarkdownContent content={message.content} />}
       </div>
       {!isUser && message.sources && message.sources.length > 0 && (
-        <div className="mt-1 max-w-[85%] text-xs text-muted-foreground">
-          {message.sources.map((s, i) => (
-            <span key={`${s.document}-${s.section}`}>
-              {i > 0 && " · "}
-              {s.document} §{s.section}
+        <div className="mt-1.5 flex max-w-[85%] flex-wrap gap-1.5">
+          {message.sources.map((s) => (
+            <span
+              key={`${s.document}-${s.section}`}
+              className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+            >
+              {s.document} <span className="text-primary">§{s.section}</span>
             </span>
           ))}
         </div>
@@ -160,14 +198,39 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   )
 }
 
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <div className="space-y-2 [&>*:last-child]:mb-0">
+      <ReactMarkdown
+        components={{
+          p: ({ children }) => <p className="leading-relaxed">{children}</p>,
+          strong: ({ children }) => (
+            <strong className="font-semibold text-primary">{children}</strong>
+          ),
+          ul: ({ children }) => <ul className="ml-4 list-disc space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="ml-4 list-decimal space-y-1">{children}</ol>,
+          li: ({ children }) => <li className="pl-1">{children}</li>,
+          a: ({ children, href }) => (
+            <a href={href} className="text-primary underline underline-offset-2">
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
+}
+
 function TypingIndicator() {
   return (
-    <div className="flex items-start">
-      <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-3">
+    <div className="flex items-start animate-message-in">
+      <div className="flex items-center gap-1 rounded-2xl border border-border/60 bg-card px-4 py-3 shadow-glow-sm">
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="size-1.5 animate-bounce rounded-full bg-muted-foreground"
+            className="size-1.5 animate-bounce rounded-full bg-primary"
             style={{ animationDelay: `${i * 120}ms` }}
           />
         ))}
