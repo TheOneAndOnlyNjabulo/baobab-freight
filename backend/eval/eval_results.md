@@ -1,18 +1,26 @@
 # Evaluation Results
 
-Generated: 2026-09-02T10:27:42+00:00
+Generated: 2026-09-02T12:28:52+00:00
 
 ## Summary
 
-- Questions evaluated: 29
+- Cases passed overall: 32/34 (94%)
+
+**Single-document cases (29)** — one document answers the question:
 - Retrieval hit rate (expected doc in top-5): 29/29 (100%)
 - Average rank when hit: 1.2
-- Full keyword match rate: 29/29 (100%)
-- Average keyword coverage: 100%
+- Full keyword match rate: 27/29 (93%)
+- Average keyword coverage: 93%
+
+**Multi-document cases (2)** — the question spans two documents:
+- All expected docs retrieved in top-5: 2/2 (100%)
+
+**Not-found cases (3)** — correct behavior is the low-confidence fallback, not a guess:
+- Correctly declined to answer: 3/3 (100%)
 
 ## Per-question results
 
-| # | Question | Expected doc | Retrieval | Keywords |
+| # | Question | Expected | Retrieval | Keywords / behavior |
 |---|---|---|---|---|
 | 1 | What VAT rate applies to imports into South Africa? | Customs and VAT Compliance Guide | hit (rank 1) | all matched |
 | 2 | Why do I need the correct HS code on a shipment? | Customs and VAT Compliance Guide | hit (rank 1) | all matched |
@@ -33,8 +41,8 @@ Generated: 2026-09-02T10:27:42+00:00
 | 17 | What is a SADC Certificate of Origin used for? | Cross-Border Documentation Checklist — Overview | hit (rank 1) | all matched |
 | 18 | Which authority handles customs clearance into Zimbabwe? | Cross-Border Documentation Checklist — Zimbabwe | hit (rank 2) | all matched |
 | 19 | Which authority handles customs clearance into Botswana? | Cross-Border Documentation Checklist — Botswana | hit (rank 2) | all matched |
-| 20 | What is a one-stop border post on the Zambia corridor? | Cross-Border Documentation Checklist — Zambia | hit (rank 1) | all matched |
-| 21 | Why do invoices for Mozambique shipments need to be bilin... | Cross-Border Documentation Checklist — Mozambique | hit (rank 1) | all matched |
+| 20 | What is a one-stop border post on the Zambia corridor? | Cross-Border Documentation Checklist — Zambia | hit (rank 1) | missed: Chirundu |
+| 21 | Why do invoices for Mozambique shipments need to be bilin... | Cross-Border Documentation Checklist — Mozambique | hit (rank 1) | missed: Portuguese, bilingual |
 | 22 | How often is the fuel surcharge reviewed? | Fuel Surcharge Policy | hit (rank 1) | all matched |
 | 23 | How is volumetric weight calculated? | General Pricing Policy | hit (rank 1) | all matched |
 | 24 | How many hours can a driver drive without a break? | Driver Hours of Service Policy | hit (rank 1) | all matched |
@@ -43,3 +51,8 @@ Generated: 2026-09-02T10:27:42+00:00
 | 27 | Why does the chatbot log my questions? | POPIA Data Privacy Notice | hit (rank 1) | all matched |
 | 28 | How do I track my shipment? | General FAQ — Tracking and Delivery | hit (rank 1) | all matched |
 | 29 | What payment terms are available for account clients? | General FAQ — Payment Terms | hit (rank 2) | all matched |
+| 30 | What documents do I need and how long will delivery take ... | Cross-Border Documentation Checklist — Zambia; Delivery SLA — Zambia Corridor | all hit | n/a |
+| 31 | What border post do I use and what's the guaranteed trans... | Cross-Border Documentation Checklist — Botswana; Delivery SLA — Botswana Corridor | all hit | n/a |
+| 32 | Do you offer air freight services for urgent shipments? | *(none — out of scope)* | n/a | correctly declined |
+| 33 | What are your rail freight rates to Cape Town? | *(none — out of scope)* | n/a | correctly declined |
+| 34 | What's a good recipe for koeksisters? | *(none — out of scope)* | n/a | correctly declined |

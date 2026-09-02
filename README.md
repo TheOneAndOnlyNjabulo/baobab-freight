@@ -78,35 +78,50 @@ A few things worth calling out, since they're the actual substance of this proje
 - **Structure-aware chunking, not fixed-size.** Every document uses numbered `## N. Heading` sections deliberately,
   so chunks split on real semantic boundaries (section → paragraph → sentence, in that order of preference) —
   never mid-sentence, never an arbitrary character cutoff.
-- **A confidence threshold gates generation, not just the prompt.** The system prompt alone tells the model to say
-  "I don't know" — but retrieval always returns its top-k nearest chunks regardless of relevance, so a prompt-only
-  approach still attaches irrelevant citations to an "I don't know" answer. The threshold (calibrated empirically
-  against real similarity scores across in-scope, borderline, and out-of-scope test questions) short-circuits
-  before the LLM is even called when nothing retrieved is actually relevant — saving a generation call and keeping
-  citations honest.
+- **Two guardrails against hallucinated citations, not one.** A retrieval-score threshold (0.62, calibrated
+  empirically across in-scope, borderline, and out-of-scope test questions) short-circuits before the LLM is even
+  called when nothing retrieved clears the bar — but it doesn't catch everything: adversarial questions that reuse
+  in-domain vocabulary ("air freight services", "rail freight rates") retrieve plausible-looking road-freight SLA
+  chunks at 0.66–0.73, comfortably above the threshold, without those chunks actually answering the question. Found
+  by adding adversarial cases to the eval set, not by inspection. The fix is a second, post-generation check: the
+  model is instructed to reply with an exact sentinel string when the retrieved context doesn't answer the
+  question, and the chain checks for that literal rather than pattern-matching free-form refusal prose (which
+  already varies — "insufficient information" vs. "cannot answer" — even within this project's own test cases). If
+  the sentinel comes back, the citations are dropped along with the answer, so citations are only ever attached to
+  something the model actually used.
 - **Rate limiting can't be client-supplied.** An earlier draft of the API had the frontend send its own IP address
   in the request body — trivially bypassable by anyone who opened devtools. The backend derives it server-side
   instead.
 - **The eval harness caught bugs in itself, not just the system.** Two of the eval set's expected answers were
   wrong when first written (one used a fact from the wrong section of a document, one had two keywords that could
   never both match under the scorer's AND logic) — both were found by actually reading the flagged failures rather
-  than assuming the system was at fault, and fixed. See [`backend/eval/eval_results.md`](./backend/eval/eval_results.md).
+  than assuming the system was at fault, and fixed. It later caught a real system bug too — see the guardrails
+  point above. See [`backend/eval/eval_results.md`](./backend/eval/eval_results.md).
 
 ## Evaluation results
 
-29 questions, one covering every document in `docs/`, each checked against two independent metrics: whether the
-expected document was retrieved in the top 5 results, and whether the generated answer contains the expected
-key facts.
+34 cases in three groups: 29 single-document questions (one per document in `docs/`), 2 questions that
+legitimately require chunks from two documents, and 3 adversarial/out-of-scope questions that should be declined
+rather than answered — including two that reuse in-domain vocabulary specifically to stress the confidence
+guardrails rather than just confirm they work on easy cases.
 
 | Metric | Result |
 |---|---|
-| Retrieval hit rate (expected doc in top-5) | **29/29 (100%)** |
-| Average rank when hit | 1.2 |
-| Full keyword match rate | **29/29 (100%)** |
-| Average keyword coverage | 100% |
+| Single-doc retrieval hit rate (expected doc in top-5) | **29/29 (100%)** |
+| Single-doc full keyword match rate | 27/29 (93%) |
+| Multi-doc cases (all expected docs retrieved) | **2/2 (100%)** |
+| Not-found cases (correctly declined) | **3/3 (100%)** |
 
-Full per-question breakdown: [`backend/eval/eval_results.md`](./backend/eval/eval_results.md). Re-run it yourself
-with `cd backend && python scripts/eval.py` (needs the same env vars as the app — see Setup below).
+Retrieval is deterministic and consistently hits 100%. Keyword match fluctuates a couple of points run to run —
+`temperature` is a no-op for `gemini-3.5-flash-lite` (the SDK warns and ignores it), so generation isn't fully
+reproducible, and a rephrased-but-correct answer occasionally misses a specific substring the eval expects (e.g.
+the model explaining what a one-stop border post *is* without naming *which* one on a given corridor). That's a
+generation-consistency property of the chosen model, not a retrieval problem — the number above is from one real
+run, not a cherry-picked best one.
+
+Full per-question breakdown, including the adversarial cases and what tripped them up during development:
+[`backend/eval/eval_results.md`](./backend/eval/eval_results.md). Re-run it yourself with
+`cd backend && python scripts/eval.py` (needs the same env vars as the app — see Setup below).
 
 ## Tech stack
 
@@ -205,5 +220,7 @@ npm run dev
 }
 ```
 
-10 questions per IP (derived server-side, not client-supplied), tracked via the Neon query log rather than a
-separate cache layer. Returns 429 once exhausted, 502 on generation failure, 422 on an empty question.
+10 questions per IP, for good — there's no reset window, it's a lifetime count against the Neon query log rather
+than a separate cache layer (matches this project's scale; a shared office/NAT IP shares the same 10). IP is
+derived server-side, not client-supplied. Returns 429 once exhausted, 502 on generation failure, 422 on an empty
+question.

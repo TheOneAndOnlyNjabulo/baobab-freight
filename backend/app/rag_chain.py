@@ -32,7 +32,17 @@ NOT_FOUND_ANSWER = (
     "goods, cross-border documentation, pricing, driver safety, POPIA, or general FAQs."
 )
 
-SYSTEM_PROMPT = """You are the Baobab Freight Assistant, a support chatbot for Baobab Freight & \
+# Sentinel the model must emit verbatim (and only this) when the retrieved context
+# doesn't answer the question. The similarity threshold above catches queries where
+# nothing relevant was retrieved at all; it does NOT catch queries using in-domain
+# vocabulary that retrieve plausible-looking chunks (e.g. "air freight rates" pulls
+# back road-freight SLA chunks at 0.66-0.73, comfortably above the 0.62 gate) but
+# don't actually answer the question. This second, post-generation check catches
+# those - an exact-match on a constrained literal is not the brittle substring-match
+# on free-form refusal prose it might look like.
+INSUFFICIENT_CONTEXT_SENTINEL = "INSUFFICIENT_CONTEXT"
+
+SYSTEM_PROMPT = f"""You are the Baobab Freight Assistant, a support chatbot for Baobab Freight & \
 Logistics, a fictional South African freight and logistics company. Answer the user's question \
 using ONLY the context below, drawn from Baobab's internal policy and compliance documents.
 
@@ -41,8 +51,9 @@ Rules:
 assume anything the context does not state.
 - When you state a specific fact (a number, deadline, rate, permit, or requirement), name the \
 document it comes from, e.g. "(See the Delivery SLA Policy - General Terms document.)"
-- If the context does not contain enough information to answer the question, say so explicitly \
-and clearly. Do not guess or fabricate an answer.
+- If the context does not contain enough information to answer the question, respond with \
+EXACTLY this and nothing else: {INSUFFICIENT_CONTEXT_SENTINEL}
+- Do not guess or fabricate an answer.
 - Be concise and direct."""
 
 _prompt = ChatPromptTemplate.from_messages(
@@ -107,6 +118,13 @@ def answer_question(question: str, top_k: int = 5) -> RagResult:
 
     chain = _get_chain()
     answer = chain.invoke({"context": _format_context(chunks), "question": question})
+
+    if answer.strip() == INSUFFICIENT_CONTEXT_SENTINEL:
+        # Threshold gate passed (in-domain vocabulary scored high enough to retrieve),
+        # but the model itself couldn't answer from what was retrieved - don't attach
+        # citations to a non-answer.
+        return RagResult(answer=NOT_FOUND_ANSWER, sources=[], chunk_ids=[])
+
     return RagResult(
         answer=answer,
         sources=_dedupe_sources(chunks),
