@@ -1,3 +1,4 @@
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 # erroring, and never overrides an already-set env var.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
+from app.db import log_query  # noqa: E402
 from app.rag_chain import answer_question  # noqa: E402
 
 app = FastAPI(title="Baobab Freight Assistant API")
@@ -39,10 +41,28 @@ def chat(request: ChatRequest) -> ChatResponse:
     if not request.question.strip():
         raise HTTPException(status_code=422, detail="question must not be empty")
 
+    start = time.perf_counter()
     try:
         result = answer_question(request.question)
     except Exception:
+        latency_ms = int((time.perf_counter() - start) * 1000)
+        log_query(
+            question=request.question,
+            answer=None,
+            chunk_ids=[],
+            ip_address=request.ip_address,
+            latency_ms=latency_ms,
+        )
         raise HTTPException(status_code=502, detail="Failed to generate an answer. Please try again.")
+
+    latency_ms = int((time.perf_counter() - start) * 1000)
+    log_query(
+        question=request.question,
+        answer=result.answer,
+        chunk_ids=result.chunk_ids,
+        ip_address=request.ip_address,
+        latency_ms=latency_ms,
+    )
 
     return ChatResponse(
         answer=result.answer,

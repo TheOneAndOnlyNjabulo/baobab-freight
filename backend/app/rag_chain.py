@@ -53,6 +53,7 @@ class Source:
 class RagResult:
     answer: str
     sources: list[Source]
+    chunk_ids: list[str]
 
 
 def _format_context(chunks: list[RetrievedChunk]) -> str:
@@ -87,4 +88,8 @@ def answer_question(question: str, top_k: int = 5) -> RagResult:
     chunks = retrieve(question, top_k=top_k)
     chain = _get_chain()
     answer = chain.invoke({"context": _format_context(chunks), "question": question})
-    return RagResult(answer=answer, sources=_dedupe_sources(chunks))
+    return RagResult(
+        answer=answer,
+        sources=_dedupe_sources(chunks),
+        chunk_ids=[c.id for c in chunks],
+    )

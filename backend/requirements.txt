@@ -5,3 +5,4 @@ pinecone==9.1.0
 python-dotenv==1.2.3
 langchain-core==1.6.1
 langchain-google-genai==4.4.0
+psycopg[binary]==3.3.5

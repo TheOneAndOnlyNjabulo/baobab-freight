@@ -23,6 +23,7 @@ _pinecone_index = None
 
 @dataclass
 class RetrievedChunk:
+    id: str
     source_document: str
     section: str
     text: str
@@ -72,6 +73,7 @@ def retrieve(query: str, top_k: int = 5) -> list[RetrievedChunk]:
 
     return [
         RetrievedChunk(
+            id=match["id"],
             source_document=match["metadata"]["source_document"],
             section=match["metadata"]["section"],
             text=match["metadata"]["text"],
