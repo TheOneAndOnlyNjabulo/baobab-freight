@@ -5,7 +5,7 @@ export type Source = {
 
 export type ChatMessage = {
   id: string
-  role: "user" | "assistant"
+  role: "user" | "assistant" | "error"
   content: string
   sources?: Source[]
 }

@@ -7,12 +7,23 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/chat/theme-toggle"
 import type { ChatMessage } from "@/lib/chat-types"
-import { INITIAL_MESSAGES, RATE_LIMIT_PER_IP, getMockAnswer } from "@/lib/mock-chat"
+import { ChatApiError, sendChatMessage } from "@/lib/api"
 import { cn } from "@/lib/utils"
 
-// Simulates the network + generation delay a real /chat call would have, so the
-// loading state (and the eventual swap to a real fetch in step 10) feels right.
-const MOCK_RESPONSE_DELAY_MS = 700
+const INITIAL_MESSAGES: ChatMessage[] = [
+  {
+    id: "seed-1",
+    role: "assistant",
+    content:
+      "Hi, I'm the Baobab Freight Assistant. Ask me about customs, delivery SLAs, dangerous goods, claims, or any of our other policies.",
+  },
+]
+
+// Optimistic starting value shown before the first real response - the backend
+// is the source of truth for the actual count (RATE_LIMIT_PER_IP in main.py),
+// this just avoids showing nothing on first load. Corrected immediately once a
+// real remaining_questions comes back.
+const INITIAL_REMAINING_GUESS = 10
 
 function nextId() {
   return Math.random().toString(36).slice(2)
@@ -21,7 +32,7 @@ function nextId() {
 export function ChatInterface() {
   const [messages, setMessages] = React.useState<ChatMessage[]>(INITIAL_MESSAGES)
   const [input, setInput] = React.useState("")
-  const [remaining, setRemaining] = React.useState(RATE_LIMIT_PER_IP)
+  const [remaining, setRemaining] = React.useState(INITIAL_REMAINING_GUESS)
   const [isSending, setIsSending] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
 
@@ -32,7 +43,7 @@ export function ChatInterface() {
   const limitReached = remaining <= 0
   const canSend = input.trim().length > 0 && !isSending && !limitReached
 
-  function handleSend() {
+  async function handleSend() {
     if (!canSend) return
 
     const question = input.trim()
@@ -40,16 +51,22 @@ export function ChatInterface() {
     setInput("")
     setIsSending(true)
 
-    // Mock only - step 10 replaces this with a real fetch("/chat") call.
-    window.setTimeout(() => {
-      const { content, sources } = getMockAnswer(question)
+    try {
+      const result = await sendChatMessage(question)
       setMessages((prev) => [
         ...prev,
-        { id: nextId(), role: "assistant", content, sources },
+        { id: nextId(), role: "assistant", content: result.answer, sources: result.sources },
       ])
-      setRemaining((prev) => Math.max(0, prev - 1))
+      setRemaining(result.remaining_questions)
+    } catch (err) {
+      if (err instanceof ChatApiError && err.status === 429) {
+        setRemaining(0)
+      }
+      const message = err instanceof ChatApiError ? err.message : "Something went wrong. Please try again."
+      setMessages((prev) => [...prev, { id: nextId(), role: "error", content: message }])
+    } finally {
       setIsSending(false)
-    }, MOCK_RESPONSE_DELAY_MS)
+    }
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -105,6 +122,16 @@ export function ChatInterface() {
 }
 
 function MessageBubble({ message }: { message: ChatMessage }) {
+  if (message.role === "error") {
+    return (
+      <div className="flex flex-col items-start">
+        <div className="max-w-[85%] rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm leading-relaxed text-destructive">
+          {message.content}
+        </div>
+      </div>
+    )
+  }
+
   const isUser = message.role === "user"
 
   return (
