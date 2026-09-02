@@ -36,10 +36,10 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 REPO_ROOT = BACKEND_DIR.parent
 DOCS_DIR = REPO_ROOT / "docs"
 
-load_dotenv(BACKEND_DIR / ".env")
+sys.path.insert(0, str(BACKEND_DIR))
+from app.embedding_config import EMBED_DIMENSION, EMBED_MODEL  # noqa: E402
 
-EMBED_MODEL = "gemini-embedding-001"
-EMBED_DIMENSION = 3072
+load_dotenv(BACKEND_DIR / ".env")
 
 # gemini-embedding-001's documented max input is 2048 tokens. Target well under
 # that so a chunk still has room even if the real tokenizer disagrees slightly
