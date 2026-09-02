@@ -12,3 +12,6 @@ ROADMAP.md
 
 # Claude Code tooling artifacts
 .claude/
+
+# Next.js boilerplate/agent files, not part of the portfolio repo
+frontend/AGENTS.md

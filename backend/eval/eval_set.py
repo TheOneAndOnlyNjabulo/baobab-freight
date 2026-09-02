@@ -1,23 +1,36 @@
 """
-Evaluation set: 29 questions spanning every document topic, each with the document
-that should be retrieved and keywords a correct answer should contain. Facts were
-cross-checked against the actual docs/ text (grep'd, not recalled from memory)
-before being written here, so a failure means the pipeline is wrong, not the eval
-data.
+Evaluation set: 29 single-document questions spanning every document topic, plus
+cases that stress two behaviors the single-doc cases can't reach - the low-confidence
+"not found" fallback (step 12) and retrieval across a question that legitimately spans
+two documents. Facts were cross-checked against the actual docs/ text (grep'd, not
+recalled from memory) before being written here, so a failure means the pipeline is
+wrong, not the eval data.
 
 expected_keywords are matched case-insensitively as substrings of the generated
 answer - deliberately simple (not semantic similarity) so a failure is easy to
-read directly off the eval report.
+read directly off the eval report. A single keyword entry may list interchangeable
+phrasings separated by '|' (e.g. "BURS|Botswana Unified Revenue Service") when the
+source docs themselves use both forms - either one is a correct answer.
+
+expected_documents (plural) is for cases where a correct answer requires chunks from
+more than one document - scored as "every listed document appears somewhere in the
+top-k", not "the top result matches".
+
+expects_not_found marks cases where the correct behavior is the low-confidence
+fallback, not an answer - scored by checking the RAG chain returned no sources rather
+than by keyword matching.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass
 class EvalCase:
     question: str
-    expected_document: str
-    expected_keywords: list[str]
+    expected_document: str | None = None
+    expected_keywords: list[str] = field(default_factory=list)
+    expected_documents: list[str] | None = None
+    expects_not_found: bool = False
 
 
 EVAL_SET: list[EvalCase] = [
@@ -114,7 +127,7 @@ EVAL_SET: list[EvalCase] = [
     EvalCase(
         "Which authority handles customs clearance into Botswana?",
         "Cross-Border Documentation Checklist — Botswana",
-        ["BURS"],
+        ["BURS|Botswana Unified Revenue Service"],
     ),
     EvalCase(
         "What is a one-stop border post on the Zambia corridor?",
@@ -165,5 +178,38 @@ EVAL_SET: list[EvalCase] = [
         "What payment terms are available for account clients?",
         "General FAQ — Payment Terms",
         ["30-day"],
+    ),
+
+    # --- Multi-document cases: a correct answer needs chunks from more than one doc ---
+    EvalCase(
+        "What documents do I need and how long will delivery take to Lusaka, Zambia?",
+        expected_documents=[
+            "Cross-Border Documentation Checklist — Zambia",
+            "Delivery SLA — Zambia Corridor",
+        ],
+    ),
+    EvalCase(
+        "What border post do I use and what's the guaranteed transit time to Gaborone?",
+        expected_documents=[
+            "Cross-Border Documentation Checklist — Botswana",
+            "Delivery SLA — Botswana Corridor",
+        ],
+    ),
+
+    # --- Not-found cases: the correct behavior is the low-confidence fallback, not a guess ---
+    EvalCase(
+        # Adversarial: in-domain freight vocabulary, plausible question, but the
+        # corpus only covers road freight - stresses the confidence threshold
+        # directly rather than an obviously off-topic question would.
+        "Do you offer air freight services for urgent shipments?",
+        expects_not_found=True,
+    ),
+    EvalCase(
+        "What are your rail freight rates to Cape Town?",
+        expects_not_found=True,
+    ),
+    EvalCase(
+        "What's a good recipe for koeksisters?",
+        expects_not_found=True,
     ),
 ]
