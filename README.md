@@ -15,9 +15,8 @@ assistant states when it doesn't know something rather than guessing.
 
 ## Why this exists
 
-This is a portfolio project built to demonstrate practical RAG engineering. The focus areas are retrieval
-quality, citation grounding, and refusing to answer when the documents don't support one. The chat UI is
-intentionally simple so those parts remain the focus.
+This project focuses on practical RAG engineering: retrieval quality, citation grounding, and refusing to answer
+when the documents don't support one. The chat UI is intentionally simple so those parts remain the focus.
 
 ## Architecture
 
