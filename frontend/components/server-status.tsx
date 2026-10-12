@@ -10,7 +10,7 @@ export function ServerStatusBanner({ status }: { status: BackendStatus }) {
     return (
       <div
         role="status"
-        className="flex items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200"
+        className="flex animate-rise items-start gap-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800 dark:text-amber-200"
       >
         <Loader2
           className="mt-0.5 size-4 shrink-0 animate-spin"
@@ -35,7 +35,7 @@ export function ServerStatusBanner({ status }: { status: BackendStatus }) {
     return (
       <div
         role="alert"
-        className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        className="animate-rise rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
       >
         Can&apos;t reach the demo server right now. Please try again in a few
         minutes.

@@ -121,7 +121,7 @@ export function ChatInterface() {
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 pt-3 lg:gap-4 lg:px-6 lg:pt-4 lg:pb-6">
+      <div className="stagger mx-auto flex min-h-0 w-full max-w-7xl flex-1 pt-3 lg:gap-4 lg:px-6 lg:pt-4 lg:pb-6">
         <Sidebar
           onPickTopic={mobileView === "topics" ? handlePickMobileTopic : handlePickTopic}
           mobileOpen={mobileView === "topics"}
@@ -211,7 +211,7 @@ function MobileTabBar({
             aria-current={active ? "page" : undefined}
             className={itemClass}
           >
-            <span className={cn(pillClass, active ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+            <span className={cn(pillClass, active ? "animate-pop bg-primary text-primary-foreground" : "text-muted-foreground")}>
               <Icon className="size-5" strokeWidth={2} aria-hidden="true" />
             </span>
             <span className={active ? "text-foreground" : "text-muted-foreground"}>{tab.label}</span>
@@ -263,7 +263,7 @@ function MobileTopics({ onPick }: { onPick: (question: string) => void }) {
           key={topic.label}
           type="button"
           onClick={() => onPick(topic.question)}
-          className="rounded-full bg-sky px-3.5 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-primary hover:text-primary-foreground"
+          className="rounded-full bg-sky px-3.5 py-1.5 text-xs font-semibold text-on-accent transition-[color,background-color,transform] hover:bg-primary hover:text-primary-foreground active:scale-95"
         >
           {topic.label}
         </button>

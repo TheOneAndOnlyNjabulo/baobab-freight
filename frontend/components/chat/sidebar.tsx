@@ -81,13 +81,13 @@ export function Sidebar({
       </div>
 
       <div className="relative flex-1 overflow-y-auto px-6 pb-6">
-        <div className="flex flex-col gap-1.5">
+        <div className="stagger flex flex-col gap-1.5">
           {TOPICS.map((topic) => (
             <button
               key={topic.label}
               type="button"
               onClick={() => onPickTopic(topic.question)}
-              className="group flex items-center justify-between rounded-full bg-white/70 px-4 py-2.5 text-left text-sm font-semibold transition-colors hover:bg-on-accent hover:text-white focus-visible:ring-3 focus-visible:ring-on-accent/40 focus-visible:outline-none"
+              className="group flex items-center justify-between rounded-full bg-white/70 px-4 py-2.5 text-left text-sm font-semibold transition-[color,background-color,transform] hover:bg-on-accent active:scale-[0.98] hover:text-white focus-visible:ring-3 focus-visible:ring-on-accent/40 focus-visible:outline-none"
             >
               {topic.label}
               <ArrowUpRight
