@@ -99,61 +99,56 @@ export function ChatInterface() {
   }
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden">
-      <Sidebar onPickTopic={handlePickTopic} />
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border px-4 py-3 lg:justify-end lg:px-6">
-          <div className="lg:hidden">
-            <Brand />
-          </div>
-          <div className="flex items-center gap-3">
+    <div className="flex h-dvh flex-col bg-background">
+      {/* Flat header, capped to the same centred column as the panels below */}
+      <header className="shrink-0 pt-4">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+          <Brand />
+          <div className="flex items-center gap-2">
             <RemainingIndicator remaining={remaining} limitReached={limitReached} />
-            <div className="lg:hidden">
-              <ThemeToggle />
-            </div>
-          </div>
-        </header>
-
-        <div ref={scrollRef} className="flex-1 overflow-y-auto">
-          <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 lg:px-8">
-            <ServerStatusBanner status={backendStatus} />
-            {messages.map((message) => (
-              <MessageBubble key={message.id} message={message} />
-            ))}
-            {messages.length === INITIAL_MESSAGES.length && !isSending && (
-              <MobileTopics onPick={handleFillTopic} />
-            )}
-            {isSending && (
-              <div className="flex flex-col gap-2">
-                <TypingIndicator />
-                <SlowRequestHint />
-              </div>
-            )}
+            <ThemeToggle />
           </div>
         </div>
+      </header>
 
-        <div className="border-t border-border bg-background px-4 py-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] lg:px-8 lg:py-4">
-          <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-full border border-border bg-card px-2 py-1.5 pl-4 shadow-sm">
-            <Input
-              ref={inputRef}
-              value={input}
-              onChange={(event) => setInput(event.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={limitReached ? "No questions remaining" : "Ask a question..."}
-              disabled={isSending || limitReached}
-              aria-label="Your question"
-              className="border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!canSend}
-              size="icon"
-              aria-label="Send"
-              className="shrink-0 rounded-full"
-            >
-              <Send className="size-4" />
-            </Button>
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-4 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-6 sm:pb-6">
+        <Sidebar onPickTopic={handlePickTopic} />
+
+        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border">
+          <div ref={scrollRef} className="flex-1 overflow-y-auto">
+            <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 lg:px-8">
+              <ServerStatusBanner status={backendStatus} />
+              {messages.map((message) => (
+                <MessageBubble key={message.id} message={message} />
+              ))}
+              {messages.length === INITIAL_MESSAGES.length && !isSending && (
+                <MobileTopics onPick={handleFillTopic} />
+              )}
+              {isSending && (
+                <div className="flex flex-col gap-2">
+                  <TypingIndicator />
+                  <SlowRequestHint />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="px-3 pb-3 lg:px-6 lg:pb-5">
+            <div className="mx-auto flex max-w-3xl items-center gap-2 rounded-full bg-muted p-1.5 pl-5">
+              <Input
+                ref={inputRef}
+                value={input}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={limitReached ? "No questions remaining" : "Ask a question..."}
+                disabled={isSending || limitReached}
+                aria-label="Your question"
+                className="border-none bg-transparent px-0 shadow-none focus-visible:ring-0"
+              />
+              <Button onClick={handleSend} disabled={!canSend} size="icon" aria-label="Send" className="shrink-0">
+                <Send className="size-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -162,15 +157,13 @@ export function ChatInterface() {
 }
 
 function RemainingIndicator({ remaining, limitReached }: { remaining: number; limitReached: boolean }) {
-  const dotColor = limitReached
-    ? "bg-destructive"
-    : remaining <= 3
-      ? "bg-amber-500"
-      : "bg-primary"
-
   return (
-    <div className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
-      <span className={cn("size-1.5 rounded-full", dotColor)} aria-hidden="true" />
+    <div
+      className={cn(
+        "flex items-center rounded-full px-3 py-1.5 font-mono text-[11px] font-medium tracking-wide uppercase",
+        limitReached ? "bg-destructive/15 text-destructive" : "bg-sand text-on-accent"
+      )}
+    >
       {limitReached
         ? "Daily limit reached"
         : `${remaining} question${remaining === 1 ? "" : "s"} remaining`}
@@ -186,7 +179,7 @@ function MobileTopics({ onPick }: { onPick: (question: string) => void }) {
           key={topic.label}
           type="button"
           onClick={() => onPick(topic.question)}
-          className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
+          className="rounded-full bg-sky px-3.5 py-1.5 text-xs font-semibold text-on-accent transition-colors hover:bg-primary hover:text-primary-foreground"
         >
           {topic.label}
         </button>
@@ -199,7 +192,7 @@ function MessageBubble({ message }: { message: ChatMessage }) {
   if (message.role === "error") {
     return (
       <div className="flex flex-col items-start animate-message-in">
-        <div className="max-w-[85%] rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm leading-relaxed text-destructive">
+        <div className="max-w-[85%] rounded-3xl bg-destructive/10 px-5 py-3 text-sm leading-relaxed text-destructive">
           {message.content}
         </div>
       </div>
@@ -212,10 +205,10 @@ function MessageBubble({ message }: { message: ChatMessage }) {
     <div className={cn("flex flex-col animate-message-in", isUser ? "items-end" : "items-start")}>
       <div
         className={cn(
-          "max-w-[85%] rounded-2xl px-4 py-2 text-sm leading-relaxed",
+          "max-w-[85%] rounded-3xl px-5 py-3 text-sm leading-relaxed",
           isUser
-            ? "bg-primary text-primary-foreground whitespace-pre-wrap"
-            : "border border-border bg-card text-card-foreground"
+            ? "rounded-br-lg bg-primary text-primary-foreground whitespace-pre-wrap"
+            : "rounded-bl-lg bg-card text-card-foreground"
         )}
       >
         {isUser ? message.content : <MarkdownContent content={message.content} />}
@@ -225,9 +218,9 @@ function MessageBubble({ message }: { message: ChatMessage }) {
           {message.sources.map((s) => (
             <span
               key={`${s.document}-${s.section}`}
-              className="rounded-full border border-border bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground"
+              className="rounded-full bg-muted px-2.5 py-1 font-mono text-[10px] text-muted-foreground"
             >
-              {s.document} <span className="text-foreground/70">§{s.section}</span>
+              {s.document} <span className="font-semibold text-foreground">§{s.section}</span>
             </span>
           ))}
         </div>
@@ -264,7 +257,7 @@ function MarkdownContent({ content }: { content: string }) {
 function TypingIndicator() {
   return (
     <div className="flex items-start animate-message-in">
-      <div className="flex items-center gap-1 rounded-2xl border border-border bg-card px-4 py-3">
+      <div className="flex items-center gap-1 rounded-3xl rounded-bl-lg bg-card px-5 py-4">
         {[0, 1, 2].map((i) => (
           <span
             key={i}
