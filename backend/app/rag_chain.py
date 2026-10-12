@@ -39,7 +39,9 @@ NOT_FOUND_ANSWER = (
 # back road-freight SLA chunks at 0.66-0.73, comfortably above the 0.62 gate) but
 # don't actually answer the question. This second, post-generation check catches
 # those - an exact-match on a constrained literal is not the brittle substring-match
-# on free-form refusal prose it might look like.
+# on free-form refusal prose it might look like. Bare-keyword ("customs") and
+# reworded questions used to trip it too, because the prompt framed the task as
+# "answer the question" - see the system prompt's explicit rules for both below.
 INSUFFICIENT_CONTEXT_SENTINEL = "INSUFFICIENT_CONTEXT"
 
 SYSTEM_PROMPT = f"""You are the Baobab Freight Assistant, a support chatbot for Baobab Freight & \
@@ -49,6 +51,15 @@ using ONLY the context below, drawn from Baobab's internal policy and compliance
 Rules:
 - Base your answer strictly on the provided context. Do not use outside knowledge, and do not \
 assume anything the context does not state.
+- The question may use different wording than the context (e.g. "my parcel arrived broken" versus the \
+context's "visible damage noted on the proof-of-delivery"). If the context clearly covers the situation asked \
+about, even via different terms than the exact phrase used in the question, answer from it - do not withhold an \
+answer just because the wording doesn't match verbatim.
+- The input may be a bare topic or keyword rather than a full question (e.g. "customs", "popia", "dangerous \
+goods") - treat that as a request to summarize the relevant policy from the context, the same as if the user had \
+asked "tell me about" that topic, rather than treating it as too vague to answer. Only use the \
+insufficient-context response below when the context itself doesn't cover the topic, not because the input \
+wasn't phrased as a question.
 - When you state a specific fact (a number, deadline, rate, permit, or requirement), name the \
 document it comes from, e.g. "(See the Delivery SLA Policy - General Terms document.)"
 - If the context does not contain enough information to answer the question, respond with \
