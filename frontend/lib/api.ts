@@ -37,7 +37,7 @@ export async function sendChatMessage(question: string): Promise<ChatApiResponse
     const body = await response.json().catch(() => null)
     const detail = body?.detail
     if (response.status === 429) {
-      throw new ChatApiError(429, detail ?? "You've used all your questions for this session.")
+      throw new ChatApiError(429, detail ?? "You've used all your questions for today. Please try again tomorrow.")
     }
     throw new ChatApiError(response.status, detail ?? "Failed to generate an answer. Please try again.")
   }

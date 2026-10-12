@@ -7,7 +7,9 @@ import ReactMarkdown from "react-markdown"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ThemeToggle } from "@/components/chat/theme-toggle"
-import { Brand, Sidebar } from "@/components/chat/sidebar"
+import { Brand, Sidebar, TOPICS } from "@/components/chat/sidebar"
+import { ServerStatusBanner, SlowRequestHint } from "@/components/server-status"
+import { useBackendStatus } from "@/hooks/use-backend-status"
 import type { ChatMessage } from "@/lib/chat-types"
 import { ChatApiError, sendChatMessage } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -38,6 +40,7 @@ export function ChatInterface() {
   const [isSending, setIsSending] = React.useState(false)
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const backendStatus = useBackendStatus()
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
@@ -80,6 +83,14 @@ export function ChatInterface() {
     inputRef.current?.focus()
   }
 
+  // Mobile has no sidebar, so the empty thread offers the same topics. These only
+  // fill the input rather than sending, so a visitor can read and edit first - and
+  // isn't spending one of their daily questions on a tap while the server wakes.
+  function handleFillTopic(question: string) {
+    setInput(question)
+    inputRef.current?.focus()
+  }
+
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
@@ -106,10 +117,19 @@ export function ChatInterface() {
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto">
           <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 lg:px-8">
+            <ServerStatusBanner status={backendStatus} />
             {messages.map((message) => (
               <MessageBubble key={message.id} message={message} />
             ))}
-            {isSending && <TypingIndicator />}
+            {messages.length === INITIAL_MESSAGES.length && !isSending && (
+              <MobileTopics onPick={handleFillTopic} />
+            )}
+            {isSending && (
+              <div className="flex flex-col gap-2">
+                <TypingIndicator />
+                <SlowRequestHint />
+              </div>
+            )}
           </div>
         </div>
 
@@ -152,8 +172,25 @@ function RemainingIndicator({ remaining, limitReached }: { remaining: number; li
     <div className="flex items-center gap-1.5 font-mono text-[11px] tracking-wide text-muted-foreground uppercase">
       <span className={cn("size-1.5 rounded-full", dotColor)} aria-hidden="true" />
       {limitReached
-        ? "Session limit reached"
+        ? "Daily limit reached"
         : `${remaining} question${remaining === 1 ? "" : "s"} remaining`}
+    </div>
+  )
+}
+
+function MobileTopics({ onPick }: { onPick: (question: string) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 lg:hidden">
+      {TOPICS.map((topic) => (
+        <button
+          key={topic.label}
+          type="button"
+          onClick={() => onPick(topic.question)}
+          className="rounded-full border border-border bg-card px-3 py-1 text-xs text-foreground/80 transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          {topic.label}
+        </button>
+      ))}
     </div>
   )
 }

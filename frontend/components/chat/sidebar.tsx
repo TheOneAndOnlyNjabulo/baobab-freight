@@ -1,6 +1,6 @@
 import { ThemeToggle } from "@/components/chat/theme-toggle"
 
-const TOPICS = [
+export const TOPICS = [
   { label: "Customs & VAT", question: "What VAT rate applies to imports into South Africa?" },
   { label: "Delivery SLAs", question: "How long does delivery take from Johannesburg to Durban?" },
   { label: "Dangerous goods", question: "Do I need a Safety Data Sheet to ship dangerous goods?" },
