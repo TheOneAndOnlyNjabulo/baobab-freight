@@ -18,7 +18,10 @@ export function ServerStatusBanner({ status }: { status: BackendStatus }) {
         />
         <div>
           <p className="font-medium">Waking up the demo server…</p>
-          <p className="mt-0.5 text-amber-800/80 dark:text-amber-200/80">
+          <p className="mt-0.5 text-amber-800/80 sm:hidden dark:text-amber-200/80">
+            Free hosting sleeps when idle, so this can take up to a minute.
+          </p>
+          <p className="mt-0.5 hidden text-amber-800/80 sm:block dark:text-amber-200/80">
             It runs on free hosting that sleeps when idle, so the first request
             after a quiet spell can take up to a minute. Pick a topic or type
             your question in the meantime.

@@ -10,8 +10,10 @@ function ThemeProvider({
   return (
     <NextThemesProvider
       attribute="class"
-      defaultTheme="system"
-      enableSystem
+      // Light is the designed first impression; visitors can still switch to dark
+      // with the toggle (or "d"), and next-themes remembers that choice.
+      defaultTheme="light"
+      enableSystem={false}
       disableTransitionOnChange
       {...props}
     >

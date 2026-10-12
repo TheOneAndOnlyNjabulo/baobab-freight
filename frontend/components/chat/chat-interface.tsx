@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Send } from "lucide-react"
+import { Code2, LayoutGrid, MessageCircle, Send } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 
 import { Button } from "@/components/ui/button"
@@ -41,6 +41,9 @@ export function ChatInterface() {
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const backendStatus = useBackendStatus()
+  // Phones swap between the chat and a full-screen topic panel via the bottom
+  // tab bar; on desktop both are always visible and this stays "chat".
+  const [mobileView, setMobileView] = React.useState<"chat" | "topics">("chat")
 
   React.useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
@@ -83,12 +86,19 @@ export function ChatInterface() {
     inputRef.current?.focus()
   }
 
-  // Mobile has no sidebar, so the empty thread offers the same topics. These only
-  // fill the input rather than sending, so a visitor can read and edit first - and
-  // isn't spending one of their daily questions on a tap while the server wakes.
+  // Below lg the empty thread also offers the topics as chips. These only fill the
+  // input rather than sending, so a visitor can read and edit first - and isn't
+  // spending one of their daily questions on a tap while the server wakes.
   function handleFillTopic(question: string) {
     setInput(question)
     inputRef.current?.focus()
+  }
+
+  // Picking from the full-screen mobile topic panel fills the input and returns to
+  // the chat, rather than sending straight away like the desktop panel does.
+  function handlePickMobileTopic(question: string) {
+    setInput(question)
+    setMobileView("chat")
   }
 
   function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
@@ -101,7 +111,7 @@ export function ChatInterface() {
   return (
     <div className="flex h-dvh flex-col bg-background">
       {/* Flat header, capped to the same centred column as the panels below */}
-      <header className="shrink-0 pt-4">
+      <header className="shrink-0 pt-3 lg:pt-4">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
           <Brand />
           <div className="flex items-center gap-2">
@@ -111,10 +121,18 @@ export function ChatInterface() {
         </div>
       </header>
 
-      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 gap-4 px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:px-6 sm:pb-6">
-        <Sidebar onPickTopic={handlePickTopic} />
+      <div className="mx-auto flex min-h-0 w-full max-w-7xl flex-1 pt-3 lg:gap-4 lg:px-6 lg:pt-4 lg:pb-6">
+        <Sidebar
+          onPickTopic={mobileView === "topics" ? handlePickMobileTopic : handlePickTopic}
+          mobileOpen={mobileView === "topics"}
+        />
 
-        <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-3xl border border-border">
+        <div
+          className={cn(
+            "min-w-0 flex-1 flex-col overflow-hidden lg:flex lg:rounded-3xl lg:border lg:border-border",
+            mobileView === "chat" ? "flex" : "hidden"
+          )}
+        >
           <div ref={scrollRef} className="flex-1 overflow-y-auto">
             <div className="mx-auto flex max-w-3xl flex-col gap-4 px-4 py-6 lg:px-8">
               <ServerStatusBanner status={backendStatus} />
@@ -152,7 +170,66 @@ export function ChatInterface() {
           </div>
         </div>
       </div>
+
+      <MobileTabBar view={mobileView} onChange={setMobileView} />
     </div>
+  )
+}
+
+/**
+ * Phone-only tab bar (below lg, where the topic panel isn't permanently shown),
+ * rendered as the last row of the full-height column so it never overlaps the
+ * chat. The active tab gets a filled pill behind its icon, like a native app.
+ */
+function MobileTabBar({
+  view,
+  onChange,
+}: {
+  view: "chat" | "topics"
+  onChange: (view: "chat" | "topics") => void
+}) {
+  const tabs = [
+    { id: "chat" as const, label: "Chat", icon: MessageCircle },
+    { id: "topics" as const, label: "Topics", icon: LayoutGrid },
+  ]
+  const itemClass = "flex flex-1 flex-col items-center gap-1 py-0.5 text-[11px] font-semibold"
+  const pillClass = "flex h-8 w-14 items-center justify-center rounded-full transition-colors"
+
+  return (
+    <nav
+      aria-label="Primary"
+      className="flex shrink-0 border-t border-border bg-background px-2 pt-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] lg:hidden"
+    >
+      {tabs.map((tab) => {
+        const active = view === tab.id
+        const Icon = tab.icon
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            aria-current={active ? "page" : undefined}
+            className={itemClass}
+          >
+            <span className={cn(pillClass, active ? "bg-primary text-primary-foreground" : "text-muted-foreground")}>
+              <Icon className="size-5" strokeWidth={2} aria-hidden="true" />
+            </span>
+            <span className={active ? "text-foreground" : "text-muted-foreground"}>{tab.label}</span>
+          </button>
+        )
+      })}
+      <a
+        href="https://github.com/TheOneAndOnlyNjabulo/baobab-freight"
+        target="_blank"
+        rel="noreferrer"
+        className={itemClass}
+      >
+        <span className={cn(pillClass, "text-muted-foreground")}>
+          <Code2 className="size-5" strokeWidth={2} aria-hidden="true" />
+        </span>
+        <span className="text-muted-foreground">Source</span>
+      </a>
+    </nav>
   )
 }
 
@@ -164,9 +241,16 @@ function RemainingIndicator({ remaining, limitReached }: { remaining: number; li
         limitReached ? "bg-destructive/15 text-destructive" : "bg-sand text-on-accent"
       )}
     >
-      {limitReached
-        ? "Daily limit reached"
-        : `${remaining} question${remaining === 1 ? "" : "s"} remaining`}
+      {limitReached ? (
+        "Daily limit reached"
+      ) : (
+        <>
+          <span className="sm:hidden">{remaining} left</span>
+          <span className="hidden sm:inline">
+            {remaining} question{remaining === 1 ? "" : "s"} remaining
+          </span>
+        </>
+      )}
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import type { Viewport } from "next"
 import { Big_Shoulders_Stencil, IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google"
 
 import "./globals.css"
@@ -26,6 +27,13 @@ export const metadata = {
   title: "Baobab Freight Assistant",
   description:
     "Citation-grounded assistant for Baobab Freight & Logistics policy and compliance documents.",
+}
+
+// viewportFit "cover" lets the mobile bottom tab bar pad itself clear of the
+// iPhone home indicator via env(safe-area-inset-bottom).
+export const viewport: Viewport = {
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 }
 
 export default function RootLayout({

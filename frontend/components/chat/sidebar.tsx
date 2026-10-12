@@ -1,5 +1,7 @@
 import { ArrowUpRight } from "lucide-react"
 
+import { cn } from "@/lib/utils"
+
 export const TOPICS = [
   {
     label: "Customs & VAT",
@@ -46,17 +48,24 @@ export function Brand() {
 }
 
 /**
- * Desktop topic panel: a flat sky-blue block with the topics as white pills.
- * Clicking a topic sends it straight away (the mobile chips in the empty thread
- * only fill the input instead).
+ * Topic panel: a flat sky-blue block with the topics as white pills. On desktop
+ * it's a permanent side panel; on phones it's the full-screen "Topics" tab,
+ * shown only while `mobileOpen` is set.
  */
 export function Sidebar({
   onPickTopic,
+  mobileOpen = false,
 }: {
   onPickTopic: (question: string) => void
+  mobileOpen?: boolean
 }) {
   return (
-    <aside className="relative hidden w-80 shrink-0 flex-col overflow-hidden rounded-3xl bg-sky text-on-accent lg:flex">
+    <aside
+      className={cn(
+        "relative w-full shrink-0 flex-col overflow-hidden bg-sky text-on-accent lg:flex lg:w-80 lg:rounded-3xl",
+        mobileOpen ? "flex" : "hidden"
+      )}
+    >
       <div
         className="pointer-events-none absolute -right-16 -bottom-16 size-56 rounded-full bg-on-accent/10"
         aria-hidden="true"
