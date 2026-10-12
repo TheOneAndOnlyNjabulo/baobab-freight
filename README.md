@@ -26,7 +26,7 @@ flowchart LR
         UI[Chat UI]
     end
 
-    subgraph Backend["FastAPI on Railway"]
+    subgraph Backend["FastAPI on Render"]
         API["/chat endpoint"]
         RAG[RAG Chain<br/>LangChain]
         RateLimit[Rate limiter]
@@ -127,7 +127,7 @@ Full per-question breakdown, including the adversarial cases and what they found
 | Layer | Choice |
 |---|---|
 | Frontend | Next.js (TypeScript) + Tailwind + shadcn/ui, deployed on Vercel |
-| Backend | Python + FastAPI, deployed on Railway |
+| Backend | Python + FastAPI, deployed on Render |
 | Orchestration | LangChain (citation-aware prompt template + generation chain) |
 | Generation | Gemini (`gemini-3.5-flash-lite`) |
 | Embeddings | Gemini (`gemini-embedding-001`) |
