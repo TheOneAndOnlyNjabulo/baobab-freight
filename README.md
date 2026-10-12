@@ -219,6 +219,6 @@ npm run dev
 }
 ```
 
-10 questions per IP. There is no reset window; it's a lifetime count against the Neon query log rather than a
-separate cache layer (matches this project's scale; a shared office/NAT IP shares the same 10). IP is derived
+10 questions per IP per rolling 24 hours, counted against the Neon query log rather than a separate cache layer
+(matches this project's scale; a shared office/NAT IP shares the same 10, and older questions age out). IP is derived
 server-side, not client-supplied. Returns 429 once exhausted, 502 on generation failure, 422 on an empty question.

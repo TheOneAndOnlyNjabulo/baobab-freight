@@ -25,6 +25,9 @@ app.add_middleware(
 )
 
 RATE_LIMIT_PER_IP = 10
+# Rolling window, not a lifetime cap - otherwise a shared office/NAT IP that used up
+# its 10 questions would be locked out of the demo permanently.
+RATE_LIMIT_WINDOW_HOURS = 24
 
 
 @app.get("/health")
@@ -67,11 +70,11 @@ def chat(request: Request, body: ChatRequest) -> ChatResponse:
 
     ip_address = _get_client_ip(request)
 
-    used = count_queries_for_ip(ip_address)
+    used = count_queries_for_ip(ip_address, RATE_LIMIT_WINDOW_HOURS)
     if used >= RATE_LIMIT_PER_IP:
         raise HTTPException(
             status_code=429,
-            detail=f"You've used all {RATE_LIMIT_PER_IP} questions for this session.",
+            detail=f"You've used all {RATE_LIMIT_PER_IP} questions for today. Please try again tomorrow.",
         )
 
     start = time.perf_counter()

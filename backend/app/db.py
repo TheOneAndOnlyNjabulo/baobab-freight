@@ -39,10 +39,16 @@ def log_query(
             )
 
 
-def count_queries_for_ip(ip_address: str) -> int:
-    """Lifetime count of rows for this IP - no reset window, matching CLAUDE.md's
-    data model note that rate limiting is just 'count rows where ip_address = $1'."""
+def count_queries_for_ip(ip_address: str, window_hours: int) -> int:
+    """Count of rows for this IP within the last `window_hours` - a rolling window, so
+    older queries age out instead of counting against the IP forever."""
     with _connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("select count(*) from queries where ip_address = %s", (ip_address,))
+            cur.execute(
+                """
+                select count(*) from queries
+                where ip_address = %s and created_at > now() - make_interval(hours => %s)
+                """,
+                (ip_address, window_hours),
+            )
             return cur.fetchone()[0]
