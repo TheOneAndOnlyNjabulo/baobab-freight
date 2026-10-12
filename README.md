@@ -107,14 +107,14 @@ against a harder case than an obviously unrelated question.
 | Metric | Result |
 |---|---|
 | Single-doc retrieval hit rate (expected doc in top-5) | **29/29 (100%)** |
-| Single-doc full keyword match rate | 27/29 (93%) |
+| Single-doc full keyword match rate | 28/29 (97%) |
 | Multi-doc cases (all expected docs retrieved) | **2/2 (100%)** |
 | Not-found cases (correctly declined) | **3/3 (100%)** |
 
 Retrieval is deterministic and consistently hits 100%. Keyword match fluctuates a couple of points run to run.
 `temperature` is a no-op for `gemini-3.5-flash-lite` (the SDK warns and ignores it), so generation isn't fully
 reproducible, and a rephrased-but-correct answer occasionally misses a specific substring the eval expects (for
-example, the model explaining what a one-stop border post is without naming which one on a given corridor). That
+example, an answer explaining why the correct HS code matters without repeating the literal term "HS code"). That
 is a generation-consistency property of the chosen model rather than a retrieval problem. The number above
 reflects a single run, not the best of several.
 
